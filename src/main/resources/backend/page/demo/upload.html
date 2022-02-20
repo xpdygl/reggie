@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件上传</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="../../plugins/element-ui/index.css" />
+  <link rel="stylesheet" href="../../styles/common.css" />
+  <link rel="stylesheet" href="../../styles/page.css" />
+</head>
+<body>
+   <div class="addBrand-container" id="food-add-app">
+    <div class="container">
+        <!--
+            class：设置当前文件上传组件的类样式
+            action：文件上传的地址【提交到服务器的地址】  /common/upload
+            show-file-list：展示上传的文件列表
+            on-success：事件 在文件上传成功之后调用某个函数 完成后续工作
+            before-upload：文件上传之前做的一些事情  绑定的函数
+            ref：为文件上传组件设置一个别名 以及对应的校验规则
+            name:如果文件上传输入框没有指定name属性值，则默认为file，当然也可以通过name属性进行设置  name="myFile"
+        -->
+        <el-upload class="avatar-uploader"
+                action="/common/upload"
+                :show-file-list="true"
+                :on-success="handleAvatarSuccess"
+                :before-upload="beforeUpload"
+                ref="upload">
+            <!--
+                imageUrl：图片的路径
+                使用v-if进行判断：如果图片路径存在 则加载图片 不存在 则不加载显示图片
+            -->
+            <img v-if="imageUrl" :src="imageUrl" class="avatar"></img>
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+        </el-upload>
+    </div>
+  </div>
+    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="../../plugins/vue/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="../../plugins/element-ui/index.js"></script>
+    <!-- 引入axios -->
+    <script src="../../plugins/axios/axios.min.js"></script>
+    <script src="../../js/index.js"></script>
+    <script>
+      new Vue({
+        el: '#food-add-app',
+        data() {
+          return {
+            imageUrl: ''
+          }
+        },
+        methods: {
+            //文件上传成功之后调用的函数 三个参数
+            // response：响应数据
+            // file：上传成功的文件
+            // fileList：上传成功的文件列表
+          handleAvatarSuccess (response, file, fileList) {
+              console.log("---------------1---------------");
+              console.log(response);
+              console.log(file);
+              console.log(fileList);
+              console.log("---------------2---------------");
+
+              //设置图片路径  文件上传成功之后 从服务器中将上传的文件下载下来进行展示
+              this.imageUrl = `/common/download?name=${response.data}`
+          },
+          beforeUpload (file) {
+            if(file){
+              const suffix = file.name.split('.')[1]
+              const size = file.size / 1024 / 1024 < 2
+              if(['png','jpeg','jpg'].indexOf(suffix) < 0){
+                this.$message.error('上传图片只支持 png、jpeg、jpg 格式！')
+                this.$refs.upload.clearFiles()
+                return false
+              }
+              if(!size){
+                this.$message.error('上传文件大小不能超过 2MB!')
+                return false
+              }
+              return file
+            }
+          }
+        }
+      })
+    </script>
+</body>
+</html>
