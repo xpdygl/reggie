@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.itheima.bean.Dish;
 import com.itheima.dto.DishDto;
 
+import java.util.List;
+
 /**
  * @author XuHui
  * @version 1.0
@@ -30,4 +32,12 @@ public interface DishService extends IService<Dish> {
      */
     void updateWithFlavor(DishDto dishDto);
 
+
+    /**
+     * 删除菜品
+     * @param ids
+     */
+//    void  remove (Long ids);
+
+//    void remove(List<Dish> ids);
 }

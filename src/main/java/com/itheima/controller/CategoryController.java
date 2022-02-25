@@ -70,7 +70,8 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     public R<String> delete(@PathVariable Long id){
 
-        //调用自定义扩展的根据id删除分类方法  因为在这个方法中我们删除分类时会检查该分类下是否存在菜品和套餐
+        //调用自定义扩展的根据id删除分类方法
+        //因为在这个方法中我们删除分类时会检查该分类下是否存在菜品和套餐
         categoryService.remove(id);
         return R.success("分类删除成功");
     }
@@ -88,7 +89,7 @@ public class CategoryController {
         //1.设置查询条件
 
         LambdaQueryWrapper<Category> categoryLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        categoryLambdaQueryWrapper.eq(Category::getType,type);
+        categoryLambdaQueryWrapper.eq(type!=null,Category::getType,type);
 
         //执行查询
         List<Category> list = categoryService.list(categoryLambdaQueryWrapper);

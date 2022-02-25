@@ -1,9 +1,13 @@
 package com.itheima.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itheima.bean.Dish;
 import com.itheima.bean.Employee;
+import com.itheima.common.BaseContext;
 import com.itheima.common.R;
+import com.itheima.service.DishService;
 import com.itheima.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author XuHui
@@ -24,6 +29,9 @@ import java.time.LocalDateTime;
 public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
+
+    @Autowired
+    private DishService dishService;
 
       /*
         处理员工登录
@@ -68,12 +76,12 @@ public class EmployeeController {
     }
 
 
-    @PostMapping("/logout")
+    @PostMapping("/loginout")
     public R<String> logout(HttpSession session){
         //1.清理session中储存的员工ID
         session.removeAttribute("employee");
         //2.返回结果
-        return  R.success("退出成功，陈洁狗狗");
+        return  R.success("退出成功");
     }
 
     //employee + post
@@ -159,8 +167,6 @@ public class EmployeeController {
         }
         return R.error("没有查到员工信息！");
     }
-
-
 
 
 }

@@ -1,6 +1,8 @@
 package com.itheima.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.bean.Category;
 import com.itheima.bean.Setmeal;
@@ -8,7 +10,6 @@ import com.itheima.common.R;
 import com.itheima.dto.SetmealDto;
 import com.itheima.service.CategoryService;
 import com.itheima.service.SetmealService;
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -54,34 +55,44 @@ public class SetmealController {
  */
     @GetMapping("/page")
     public R<Page<SetmealDto>> page(Integer page, Integer pageSize, String name){
-//创建分页数据对象
+        //创建分页数据对象
         Page<Setmeal> setmealPage = new Page<Setmeal>(page,pageSize);
         Page<SetmealDto> setmealDtoPage = new Page<>();
 
-        //设置分页条件 根据name模糊查询
+        //2.设置分页查询条件 根据name进行模糊查询
         LambdaQueryWrapper<Setmeal> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.isNotEmpty(name),Setmeal::getName,name);
-
-        //执行分页查询
+        //3.执行分页查询
         setmealService.page(setmealPage,wrapper);
 
-        //数据填充：将每一个setmeal对象中的属性值都复制到SetmealDto对象中 并且设置categoryName属性
+        //数据填充：将每一个setmeal对象中的属性值都复制到SetmealDto对象中
+        // 并且设置categoryName属性
         BeanUtils.copyProperties(setmealPage,setmealDtoPage,"records");
 
-        List<Setmeal> setmealList = setmealPage.getRecords();
-        ArrayList<SetmealDto> setmealDtoList = new ArrayList<>();
 
+        List<Setmeal> setmealList = setmealPage.getRecords();
+        List<SetmealDto> setmealDtoList = new ArrayList<>();
         for (Setmeal setmeal : setmealList) {
             SetmealDto setmealDto = new SetmealDto();
             BeanUtils.copyProperties(setmeal,setmealDto);
 
             //设置套餐分类名称
+
+            //第一句通过setmeal拿到Category的ID 然后用categoryService.getById
+            //获得category对象
+            //第二句 用category对象的名字赋值给setmealDto
+            //dto 普通的类字段更多
+            //第三句 在循环中将每个setmealDto 给到setmealDtoList中
+            //完成赋值
             Category category = categoryService.getById(setmeal.getCategoryId());
             setmealDto.setCategoryName(category.getName());
             setmealDtoList.add(setmealDto);
         }
         setmealDtoPage.setRecords(setmealDtoList);
-        //返回
+
+
+
+        //4.返回分页数据 Page 封装到R对象中
         return R.success(setmealDtoPage);
     }
 
@@ -92,6 +103,37 @@ public class SetmealController {
         setmealService.removeWithSetmealDish(ids);
         return R.success("套餐删除成功");
     }
+
+
+    @GetMapping("/list")
+   public  R list(Setmeal setmeal){
+        LambdaQueryWrapper<Setmeal> wrapper = new LambdaQueryWrapper<>();
+        //2.设置套餐所属的分类  categoryId
+
+        wrapper.eq(setmeal.getCategoryId()!=null,Setmeal::getCategoryId,setmeal.getCategoryId());
+        //3.设置当前套餐的状态  在售：status=1
+        wrapper.eq(setmeal.getStatus()!=null,Setmeal::getStatus,setmeal.getStatus());
+        List<Setmeal> list = setmealService.list(wrapper);
+        return R.success(list);
+    }
+
+    /**
+     * Request URL: http://localhost/setmeal/status/0?ids=1415580119015145474,1494282338281689090
+     * Request Method: POST
+     * Status Code: 404
+     */
+    @PostMapping("/status/{status}")
+    public R<String> deleteById (@PathVariable Integer status,@RequestParam List<Long> ids){
+
+        LambdaUpdateWrapper<Setmeal> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.in(Setmeal::getId,ids);
+
+        wrapper.set(Setmeal::getStatus,status);
+        setmealService.update(wrapper);
+        return R.success("套餐信息修改成功");
+        }
+
+
 
 
 

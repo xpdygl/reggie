@@ -6,6 +6,7 @@ import com.itheima.bean.Dish;
 import com.itheima.bean.DishFlavor;
 import com.itheima.dao.DishDao;
 import com.itheima.dto.DishDto;
+import com.itheima.exception.CustomException;
 import com.itheima.service.DishFlavorService;
 import com.itheima.service.DishService;
 import org.springframework.beans.BeanUtils;
@@ -21,6 +22,9 @@ public class DishServiceImpl extends ServiceImpl<DishDao, Dish> implements DishS
 
     @Autowired
     private DishFlavorService dishFlavorService;
+
+    @Autowired
+    private DishService dishService;
 
     //由于在当前业务方法进行了多个数据库操作  需要菜品信息和口味信息都保存成功 才算添加菜品成功  此时就需要添加事务管理
     /*
@@ -101,4 +105,23 @@ public class DishServiceImpl extends ServiceImpl<DishDao, Dish> implements DishS
         dishFlavorService.saveBatch(flavors);
 
     }
+
+//    @Override
+//    public void remove(List<Dish> ids) {
+//
+//        LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
+//        wrapper.in(Dish::getId,ids);
+//        //获得status信息
+//        Dish service = dishService.getById(wrapper);
+//        Integer status = service.getStatus();
+//
+//        //判断status是1还是0
+//        if(status==1){
+//            //说明该分类下有菜品 不能删除分类 抛出一个自定义的异常
+//            throw new CustomException("该菜品在售，不能删除！");
+//        }
+//
+//        //如果菜品没有在售就可以删除这个菜品
+//        super.removeByIds(ids);
+//    }
 }
