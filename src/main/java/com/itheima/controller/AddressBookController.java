@@ -53,7 +53,19 @@ public class AddressBookController {
         addressBookService.updateById(addressBook);
         return R.success(addressBook);
     }
+    /**
+     * Request URL: http://localhost/addressBook
+     * Request Method: PUT
+     * 保存修改后的地址
+     */
 
+    @PutMapping
+    public R<String> saveAddress(@RequestBody AddressBook addressBook){
+//        LambdaUpdateWrapper<AddressBook> wrapper = new LambdaUpdateWrapper<>();
+//        wrapper.eq()
+        addressBookService.updateById(addressBook);
+        return R.success("修改成功");
+    }
     /**
      * 根据id查询地址
      */
@@ -102,4 +114,20 @@ public class AddressBookController {
         //SQL:select * from address_book where user_id = ? order by update_time desc
         return R.success(addressBookService.list(queryWrapper));
     }
+
+    /**
+     *  Request URL: http://localhost/addressBook?ids=1495093298497384450
+     *  Request Method: DELETE
+     *  根据id删除地址。
+     */
+
+    @DeleteMapping
+    public R<String> delete( Long ids){
+
+
+        addressBookService.removeById(ids);
+        return R.success("删除成功");
+
+    }
+
 }

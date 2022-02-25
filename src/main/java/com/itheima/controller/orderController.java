@@ -2,6 +2,7 @@ package com.itheima.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itheima.bean.Employee;
 import com.itheima.bean.Orders;
 import com.itheima.common.R;
 import com.itheima.service.OrderService;
@@ -57,4 +58,40 @@ public class orderController {
      * Status Code: 404
      */
 
+    @GetMapping("/userPage")
+    public R<Page<Orders>> page(Integer page, Integer pageSize, String name){
+        Page<Orders> ordersPage = new Page<>(page, pageSize);
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotEmpty(name),Orders::getUserName,name);
+        orderService.page(ordersPage,wrapper);
+        return R.success(ordersPage);
+    }
+
+    /**
+     * 修改订单状态
+     * Request URL: http://localhost/order
+     * Request Method: PUT
+     * Status Code: 404 
+     */
+    
+    @PutMapping
+    public R update(@RequestBody Orders orders){
+        log.info("进入订单");
+        orderService.updateById(orders);
+        return  R.success("更新订单状态成功");
+    }
+
+    /**
+     * 再来一单
+     * Request URL: http://localhost/order/again
+     * Request Method: POST
+     */
+
+    @PostMapping("/again")
+    public R<String> again(@RequestBody Orders orders){
+
+        orderService.submit(orders);
+        return   R.success("再次下单");
+
+    }
 }

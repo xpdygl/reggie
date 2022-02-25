@@ -76,7 +76,7 @@ public class EmployeeController {
     }
 
 
-    @PostMapping("/loginout")
+    @PostMapping("/logout")
     public R<String> logout(HttpSession session){
         //1.清理session中储存的员工ID
         session.removeAttribute("employee");
