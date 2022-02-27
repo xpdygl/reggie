@@ -13,6 +13,9 @@
         <version>2.6.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
+
+
     <groupId>com.itheima</groupId>
     <artifactId>reggie_take_out</artifactId>
     <version>1.0-SNAPSHOT</version>
@@ -93,6 +96,15 @@
             <version>2.1.0</version>
         </dependency>
 
+        <!--redis缓存优化起步依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

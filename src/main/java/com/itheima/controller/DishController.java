@@ -1,5 +1,6 @@
 package com.itheima.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -8,7 +9,6 @@ import com.itheima.bean.Dish;
 import com.itheima.bean.DishFlavor;
 import com.itheima.common.R;
 import com.itheima.dto.DishDto;
-import com.itheima.exception.CustomException;
 import com.itheima.service.CategoryService;
 import com.itheima.service.DishFlavorService;
 import com.itheima.service.DishService;
@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -40,10 +41,17 @@ public class DishController {
     @Autowired
     private DishFlavorService dishFlavorService;
 
+    /*=====================1.注入RedisTemplate对象========================*/
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     @PostMapping
     public R save(@RequestBody DishDto dishDto) {
         log.info("dish:{}", dishDto);
         dishService.saveWithFlavor(dishDto);
+        /*=====================2.后台添加菜品成功，需要删除redis中该菜品分类的缓存数据========================*/
+        String key =  "dish_"+dishDto.getCategoryName()+"_"+dishDto.getStatus();
+        redisTemplate.delete(key);
         return R.success("菜品增加成功！");
 
     }
@@ -101,12 +109,30 @@ public class DishController {
 
     @PutMapping
     public R update(@RequestBody DishDto dishDto) {
+        //在菜品信息修改之前，获取该菜品原来的分类id
+        Long dishId = dishDto.getId();
+        Long oldCategoryId = dishService.getById(dishId).getCategoryId();
+        Long newCategoryId = dishDto.getCategoryId();
 
         dishService.updateWithFlavor(dishDto);
 
+        /*=====================优化：2.菜品信息修改成功后，删除redis中的所有菜品分类缓存数据========================*/
+        //该菜品原来所属的分类缓存数据key
+        //删除原有的分类对象的缓存数据
+        //该菜品现在所属的分类缓存数据key
+        //删除新分类对应的缓存数据
+        String key = (String) "dish_"+oldCategoryId+"_"+dishDto.getStatus();
+        redisTemplate.delete(key);
+        if (!oldCategoryId.equals(newCategoryId)){
+            key = (String) "dish_"+newCategoryId+"_"+dishDto.getStatus();
+            System.out.println("换了新的redis缓存");
+            redisTemplate.delete(key);
+        }
         return R.success("菜品信息修改成功！");
     }
 
+
+    /*=====================优化：将菜品分类下的列表数据 存入到redis缓存中========================*/
     /**
      * 根据菜品分类id categoryId或 菜品名称name 查询菜品列表信息
      *
@@ -115,6 +141,22 @@ public class DishController {
      */
     @GetMapping("/list")
     public R<List<DishDto>> getListByCondition(Dish dish) {
+
+        /*=====================2.1：判断redis缓存中是否有该菜品分类数据========================*/
+        //如果有  则从redis中获取   如果没有 则需要查询数据库，查询完成将数据存入到redis一份
+        String key = "dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+        String dishDTOListStr = (String) redisTemplate.opsForValue().get(key);
+
+        if (dishDTOListStr!=null){
+            //从redis中获取数据返回
+            System.out.println("从redis缓存中查询菜品分类列表数据...");
+            //将redis缓存中获取的json字符串数据重新转为list集合
+            return R.success(JSON.parseObject(dishDTOListStr,List.class));
+        }
+
+        //走到这里 说明redis中没有缓存。
+        System.out.println("从MySQL数据库中查询菜品分类列表数据...");
+
         //1.设置查询条件
         LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
 
@@ -153,6 +195,11 @@ public class DishController {
             //3.4：将DishDto对象在添加到dishDtoList中
             dishDtoList.add(dishDto);
         }
+
+        /*=====================2.2：走到这里 说明当前redis缓存中没有该菜品分类数据 是第一次从MySQL数据库中查询 因此需要将数据存入到Redis中一份=====================*/
+        //redis中要存入的数据时当前菜品分类下的菜品列表数据  也就是dishDtoList
+
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(dishDtoList));
         return R.success(dishDtoList);
     }
 

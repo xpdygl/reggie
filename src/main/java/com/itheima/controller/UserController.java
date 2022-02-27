@@ -4,16 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.itheima.bean.User;
 import com.itheima.common.R;
 import com.itheima.service.UserService;
-import com.itheima.utils.SMSUtils;
 import com.itheima.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.server.Session;
-import org.springframework.http.HttpRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequestMapping("/user")
@@ -22,6 +21,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @PostMapping("/sendMsg")
     public R sendMsg(@RequestBody User user, HttpSession session) {
@@ -35,7 +37,10 @@ public class UserController {
 
         //4.为了方便和前台用户输入的验证码进行比对 所以要将生成的验证码存在session中  【数据库 Redis】
         //存手机验证码到session中时  应该使用电话号作为key
-        session.setAttribute(phone, validateCode);
+        //session.setAttribute(phone, validateCode);
+
+        /*================2 将值存入redis================*/
+        redisTemplate.opsForValue().set(phone,validateCode.toString(),5, TimeUnit.MINUTES);
 
         //5.响应 发送验证码成功
         return R.success("验证码发送成功！");
@@ -50,7 +55,12 @@ public class UserController {
         String code = (String) map.get("code");
 
         //2.获取session中存储的验证码
-        Object validateCode = session.getAttribute(phone);
+        //Object validateCode = session.getAttribute(phone);
+
+        /*================3.1 将值从redis拿出================*/
+
+        Object validateCode = redisTemplate.opsForValue().get(phone);
+
 
         //3.比对用户输入的验证码和session中存储的验证码是否一致  一致登录成功
         if (validateCode != null && code.equals(validateCode.toString())) {
@@ -69,6 +79,10 @@ public class UserController {
 
             //4.3：登录成功  将user的id存入到session中
             session.setAttribute("user", user.getId());
+
+            /*================3.2 登录成功，将Redis的值删掉================*/
+
+            redisTemplate.delete(phone);
 
             return R.success(user);
         }
